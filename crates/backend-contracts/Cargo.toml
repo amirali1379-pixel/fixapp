@@ -1,0 +1,11 @@
+[package]
+name = "backend-contracts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+backend-manager = { path = "../backend-manager" }
+backend-wfp = { path = "../backend-wfp" }
+backend-windivert = { path = "../backend-windivert" }

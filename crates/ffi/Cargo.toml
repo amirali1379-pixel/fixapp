@@ -1,0 +1,27 @@
+[package]
+name = "ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+build = "build.rs"
+
+[lib]
+name = "ffi"
+
+[dependencies]
+network-core = { path = "../network-core" }
+packet-bus = { path = "../packet-bus" }
+packet-parser = { path = "../packet-parser" }
+flow-engine = { path = "../flow-engine" }
+correlation = { path = "../correlation" }
+metadata-engine = { path = "../metadata-engine" }
+network-state = { path = "../network-state" }
+backend-manager = { path = "../backend-manager" }
+backend-contracts = { path = "../backend-contracts" }
+gateway-capability = { path = "../gateway-capability" }
+backend-wfp = { path = "../backend-wfp" }
+backend-windivert = { path = "../backend-windivert" }
+backend-npcap = { path = "../backend-npcap" }
+backend-iphelper = { path = "../backend-iphelper" }
+backend-etw = { path = "../backend-etw" }

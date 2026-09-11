@@ -1,0 +1,41 @@
+[package]
+name = "benches"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+packet-bus = { path = "../packet-bus" }
+packet-parser = { path = "../packet-parser" }
+flow-engine = { path = "../flow-engine" }
+correlation = { path = "../correlation" }
+gateway-capability = { path = "../gateway-capability" }
+metadata-engine = { path = "../metadata-engine" }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "packet_parse"
+harness = false
+[[bench]]
+name = "flow_table"
+harness = false
+[[bench]]
+name = "buffer_pool"
+harness = false
+[[bench]]
+name = "capture_latency"
+harness = false
+[[bench]]
+name = "queue_latency"
+harness = false
+[[bench]]
+name = "correlation_latency"
+harness = false
+[[bench]]
+name = "gateway_forwarding_latency"
+harness = false
+[[bench]]
+name = "metadata_latency"
+harness = false

@@ -1,0 +1,17 @@
+[package]
+name = "backend-wfp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_NetworkManagement_WindowsFilteringPlatform",
+    "Win32_System_Threading",
+] }

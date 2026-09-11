@@ -1,0 +1,11 @@
+[package]
+name = "backend-windivert"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+
+[target.'cfg(windows)'.dependencies]
