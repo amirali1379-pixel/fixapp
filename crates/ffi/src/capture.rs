@@ -1,4 +1,4 @@
-// Capture pipeline — native backend -> PacketObservation -> PacketBus.
+// Capture pipeline — native backend -> Host-controlled action -> PacketObservation -> PacketBus.
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
@@ -7,7 +7,10 @@ use backend_windivert::{InterceptedPacket, WinDivertBackend, WinDivertConfig, Wi
 use network_core::observation::{NativeCaptureContext, PacketObservation};
 use network_core::timestamp::Timestamp;
 use network_core::{BackendSource, Direction, EngineError, EngineErrorCode, EngineResult};
-use crate::engine::EngineRuntime;
+use packet_parser::ParsedPacket;
+
+use crate::decision::{evaluate_packet, PacketDecision};
+use crate::engine::{global_engine, EngineRuntime};
 
 const CAPTURE_IDLE_SLEEP: Duration = Duration::from_millis(1);
 
@@ -75,6 +78,14 @@ impl EngineRuntime {
         let config = WinDivertConfig::new("true", WinDivertLayer::Network).map_err(|_| EngineError::backend_init_failed())?;
         let mut backend = WinDivertBackend::new(config);
         backend.start().map_err(|error| EngineError::with_message(EngineErrorCode::BackendStartFailed, format!("WinDivert capture handle failed to open: {:?}", error)))?;
+
+        // The live capture worker owns the Host-controlled action point. When
+        // WinDivert is the capture backend, its send-only action handle is the
+        // concrete reinjection path for Pass/Inspect decisions.
+        if self.active_reinjection_backend()?.is_none() {
+            self.set_active_reinjection_backend(Some("windivert".to_string()))?;
+        }
+
         self.capture_stop.store(false, Ordering::SeqCst);
         let stop = Arc::clone(&self.capture_stop);
         let state = Arc::clone(&self.state);
@@ -114,6 +125,10 @@ fn capture_worker_loop(
                     backend_windivert::PacketDirection::Outbound => Direction::Outbound,
                 };
                 let address = packet.address();
+                let native_context = NativeCaptureContext {
+                    backend: BackendSource::WinDivert,
+                    bytes: address.to_bytes().to_vec(),
+                };
                 let observation = PacketObservation::new(
                     network_core::ObservationId::new(id),
                     BackendSource::WinDivert,
@@ -123,11 +138,65 @@ fn capture_worker_loop(
                     address.interface_index().to_string(),
                     network_core::Packet::new(packet.data),
                 )
-                .with_native_context(NativeCaptureContext { backend: BackendSource::WinDivert, bytes: address.to_bytes().to_vec() })
+                .with_native_context(native_context)
                 .with_native_metadata("layer", address.layer().to_string())
                 .with_native_metadata("loopback", address.is_loopback().to_string())
                 .with_native_metadata("impostor", address.is_impostor().to_string())
                 .with_provenance("backend-windivert");
+
+                let decision = match ParsedPacket::parse(&observation) {
+                    Ok(parsed) => {
+                        let policy = match global_engine().lock() {
+                            Ok(guard) => match guard.as_ref() {
+                                Some(engine) => match engine.packet_policy() {
+                                    Ok(policy) => policy,
+                                    Err(_) => {
+                                        statistics.total_errors.fetch_add(1, Ordering::Relaxed);
+                                        continue;
+                                    }
+                                },
+                                None => {
+                                    statistics.total_errors.fetch_add(1, Ordering::Relaxed);
+                                    continue;
+                                }
+                            },
+                            Err(_) => {
+                                statistics.total_errors.fetch_add(1, Ordering::Relaxed);
+                                continue;
+                            }
+                        };
+                        evaluate_packet(&parsed, direction, &policy)
+                    }
+                    Err(_) => PacketDecision::Pass,
+                };
+
+                // The action is applied before the observation is handed to
+                // the rest of the engine. This closes the previous gap where
+                // policy was only stored/advisory and the intercepted packet
+                // was released without a native action.
+                let action_result = match decision {
+                    PacketDecision::Drop => Ok(()),
+                    PacketDecision::Pass | PacketDecision::Inspect => {
+                        let context = observation.native_context.as_ref().map(|c| c.bytes.as_slice());
+                        match context {
+                            Some(context) => match global_engine().lock() {
+                                Ok(guard) => match guard.as_ref() {
+                                    Some(engine) => engine.windivert_reinject(observation.packet.as_slice(), context),
+                                    None => Err(EngineError::with_message(EngineErrorCode::NotInitialized, "engine is not initialized")),
+                                },
+                                Err(_) => Err(EngineError::with_message(EngineErrorCode::InternalError, "engine mutex poisoned")),
+                            },
+                            None => Err(EngineError::with_message(EngineErrorCode::ActionFailed, "WinDivert native context is unavailable")),
+                        }
+                    }
+                };
+
+                if action_result.is_err() {
+                    statistics.total_errors.fetch_add(1, Ordering::Relaxed);
+                    std::thread::sleep(CAPTURE_IDLE_SLEEP);
+                    continue;
+                }
+
                 match packet_bus.publish_engine_owned(observation) {
                     Ok(()) => {
                         statistics.total_packets_received.fetch_add(1, Ordering::Relaxed);
