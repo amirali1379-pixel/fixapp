@@ -1,0 +1,9 @@
+[package]
+name = "packet-bus"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+parking_lot = "0.12"

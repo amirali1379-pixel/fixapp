@@ -1,0 +1,18 @@
+[package]
+name = "integration-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+packet-bus = { path = "../packet-bus" }
+packet-parser = { path = "../packet-parser" }
+flow-engine = { path = "../flow-engine" }
+backend-manager = { path = "../backend-manager" }
+correlation = { path = "../correlation" }
+gateway-capability = { path = "../gateway-capability" }
+metadata-engine = { path = "../metadata-engine" }
+network-engine = { path = "../../dll/network-engine" }
+ffi = { path = "../ffi" }

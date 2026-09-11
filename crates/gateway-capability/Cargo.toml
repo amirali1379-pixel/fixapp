@@ -1,0 +1,12 @@
+[package]
+name = "gateway-capability"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+network-state = { path = "../network-state" }
+flow-engine = { path = "../flow-engine" }
+packet-parser = { path = "../packet-parser" }

@@ -1,0 +1,23 @@
+[package]
+name = "metadata-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[dependencies]
+network-core = { path = "../network-core" }
+
+# libc and windows-sys were only used by dns.rs, which has been removed.
+#
+# When DNS enrichment is re-enabled (as packet-payload extraction),
+# re-add the required dependencies at that time.
+#
+# [target.'cfg(unix)'.dependencies]
+# libc = "0.2"
+#
+# [target.'cfg(windows)'.dependencies]
+# windows-sys = { version = "0.61.2", features = [
+#     "Win32_Foundation",
+#     "Win32_Networking_WinSock",
+# ] }
