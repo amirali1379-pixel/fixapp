@@ -1,0 +1,36 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/network-core",
+    "crates/packet-bus",
+    "crates/packet-parser",
+    "crates/flow-engine",
+    "crates/correlation",
+    "crates/metadata-engine",
+    "crates/gateway-capability",
+    "crates/network-state",
+    "crates/backend-manager",
+    "crates/backend-contracts",       
+    "crates/backend-wfp",
+    "crates/backend-windivert",
+    "crates/backend-npcap",
+    "crates/backend-iphelper",
+    "crates/backend-etw",
+    "crates/ffi",
+    "crates/benches",
+    "crates/integration-tests",
+
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["Network Engine Team"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

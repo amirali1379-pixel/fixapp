@@ -1,0 +1,13 @@
+[package]
+name = "network-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+name = "network_engine"
+
+[dependencies]
+ffi = { path = "../../crates/ffi" }
